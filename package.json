@@ -1,10 +1,10 @@
 {
 	"name": "ItemInfo",
-	"version": "4.1.0",
+	"version": "4.2.0",
 	"main": "src/mod.js",
 	"license": "MIT",
 	"author": "ODT",
-    "sptVersion": "~3.10.1",
+    "sptVersion": "~3.10.2",
 	"loadBefore": [],
 	"loadAfter": [],
 	"incompatibilities": [],
