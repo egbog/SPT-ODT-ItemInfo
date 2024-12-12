@@ -1463,7 +1463,7 @@ class ItemInfo implements IPostDBLoadMod {
 		let usedForCraftingString = ""
 		// let totalCraftingPrice = 0 // Unused
 
-		for (const recipe of this.hideoutProduction) {
+		for (const recipe of Array.isArray(this.hideoutProduction) ? this.hideoutProduction : []) {
 			for (const s in recipe.requirements) {
 				if (recipe.requirements[s].templateId === itemID) {
 					let usedForCraftingComponentsString = " < … + "
