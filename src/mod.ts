@@ -11,10 +11,10 @@ import { ILogger } from "@spt/models/spt/utils/ILogger"
 import { ConfigServer } from "@spt/servers/ConfigServer"
 import { DatabaseServer } from "@spt/servers/DatabaseServer"
 import { ItemBaseClassService } from "@spt/services/ItemBaseClassService"
-import { ITemplateItem } from "@spt/models/eft/common/tables/ITemplateItem"
-import { HandbookItem, IHandbookBase } from "@spt/models/eft/common/tables/IHandbookBase"
+import { ITemplateItem, IProps } from "@spt/models/eft/common/tables/ITemplateItem"
+import { IHandbookItem, IHandbookBase } from "@spt/models/eft/common/tables/IHandbookBase"
 import { IDatabaseTables } from "@spt/models/spt/server/IDatabaseTables"
-import { IHideoutProduction } from "@spt/models/eft/hideout/IHideoutProduction"
+import { IHideoutProduction, IScavRecipe, IHideoutProductionData } from "@spt/models/eft/hideout/IHideoutProduction"
 import { IHideoutArea } from "@spt/models/eft/hideout/IHideoutArea"
 import { IQuest } from "@spt/models/eft/common/tables/IQuest"
 import { IArmorMaterials } from "@spt/models/eft/common/IGlobals"
@@ -26,7 +26,7 @@ import { BaseClasses } from "@spt/models/enums/BaseClasses"
 import config from "../config/config.json"
 import tiers from "../config/tiers.json"
 import translations from "./translations.json"
-import { Item } from "@spt/models/eft/common/tables/IItem"
+import { IItem } from "@spt/models/eft/common/tables/IItem"
 
 // Using `this.` is perfectly fine. Much better than having ambiguous and typeless variables declared in some global scope
 // Don't worry - there's always opportunities to learn :) - Terkoiz
@@ -396,7 +396,7 @@ class ItemInfo implements IPostDBLoadMod {
 	handbook: IHandbookBase
 	locales: Record<string, Record<string, string>>
 	fleaPrices: Record<string, number>
-	hideoutProduction: IHideoutProduction[]
+	hideoutProduction: IHideoutProductionData
 	hideoutAreas: IHideoutArea[]
 	quests: Record<string, IQuest>
 	armors: IArmorMaterials
@@ -406,6 +406,7 @@ class ItemInfo implements IPostDBLoadMod {
 	dollarRatio: number
 	questRewardsDB: any
 	itemHelper: ItemHelper
+	props: IProps
 
 	// ORM
 	ORMGen: any
@@ -582,7 +583,7 @@ class ItemInfo implements IPostDBLoadMod {
 				!item._props.QuestItem && // Ignore quest items.
 				item._parent != "543be5dd4bdc2deb348b4569" // Ignore currencies.
 			) {
-				// let name = this.getItemName(itemID, userLocale) // for debug only
+				const name = this.getItemName(itemID, userLocale) // for debug only
 				// item._props.ExaminedByDefault = true // DEBUG!!!
 
 				// BSG Blacklist generator
@@ -789,12 +790,12 @@ class ItemInfo implements IPostDBLoadMod {
 				}
 
 				if (config.ArmorInfo.enabled) {
-					if (item._props.armorClass > 0) {
+					if (Number(item._props.armorClass) > 0) {
 						const armor = this.armors[item._props.ArmorMaterial]
 						// prettier-ignore
 						armorDurabilityString += `${config.ArmorInfo.addArmorClassInfo ? i18n.Armorclass + ": " + item._props?.armorClass + " | " : ""}${i18n.Effectivedurability}: ${Math.round(item._props?.MaxDurability / armor?.Destructibility)} (${i18n.Max}: ${Math.round(item._props?.MaxDurability)} x ${this.locales[userLocale][`Mat${(item._props?.ArmorMaterial)}`]}: ${roundWithPrecision(1 / armor?.Destructibility, 1)}) | ${i18n.Repairdegradation}: ${Math.round(armor?.MinRepairDegradation * 100)}% - ${Math.round(armor?.MaxRepairDegradation * 100)}%` + newLine + newLine;
-						//log(name)
-						//log(armorDurabilityString)
+						// log(name)
+						// log(armorDurabilityString)
 					}
 				}
 
@@ -887,31 +888,31 @@ class ItemInfo implements IPostDBLoadMod {
 						// headsetDescription = `${i18n.AmbientVolume}: ${item._props.AmbientCompressorSendLevel+10}dB | ${i18n.Compressor}: ${i18n.Gain} +${gain}dB × ${i18n.Treshold} ${thresh}dB ≈ ×${Math.abs((gain * (thresh+20)) / 10)} ${i18n.Boost} | ${i18n.ResonanceFilter}: ${item._props.HighpassResonance}@${item._props.HighpassFreq}Hz | ${i18n.Distortion}: ${Math.round(item._props.Distortion * 100)}%` + newLine + newLine;
 						headsetDescription = `${i18n.AmbientVolume}: ${Math.round((item._props.AmbientCompressorSendLevel+10 + item._props.EnvCommonCompressorSendLevel+7 + item._props.EnvNatureCompressorSendLevel+5 + item._props.EnvTechnicalCompressorSendLevel+7) * 10)/10}dB | ${i18n.Boost}: +${((gain + Math.abs(thresh+20)))}dB  | ${i18n.Distortion}: ${Math.round(item._props.Distortion * 100)}%` + newLine + newLine;
 
-						const headsetststs =
-							`AmbientCompressorSendLevel: ${item._props.AmbientCompressorSendLevel}dB 
-AmbientVolume: ${item._props.AmbientVolume}dB 
-CompressorAttack: ${item._props.CompressorAttack}ms
-CompressorGain: ${item._props.CompressorGain}dB 
-CompressorRelease: ${item._props.CompressorRelease}ms
-CompressorThreshold: ${item._props.CompressorThreshold}dB 
-Distortion: ${item._props.Distortion * 100}% 
-DryVolume: ${item._props.DryVolume}dB 
-EffectsReturnsCompressorSendLevel: ${item._props.EffectsReturnsCompressorSendLevel}dB 
-EffectsReturnsGroupVolume: ${item._props.EffectsReturnsGroupVolume}dB 
-EnvCommonCompressorSendLevel: ${item._props.EnvCommonCompressorSendLevel}dB 
-EnvNatureCompressorSendLevel: ${item._props.EnvNatureCompressorSendLevel}dB 
-EnvTechnicalCompressorSendLevel: ${item._props.EnvTechnicalCompressorSendLevel}dB 
-GunsCompressorSendLevel: ${item._props.GunsCompressorSendLevel}dB 
-HeadphonesMixerVolume: ${item._props.HeadphonesMixerVolume}dB 
-HighpassFreq: ${item._props.HighpassFreq}dB 
-HighpassResonance: ${item._props.HighpassResonance}dB 
-LowpassFreq: ${item._props.LowpassFreq}dB 
-NpcCompressorSendLevel: ${item._props.NpcCompressorSendLevel}dB 
-ObservedPlayerCompressorSendLevel: ${item._props.ObservedPlayerCompressorSendLevel}dB 
-RolloffMultiplier: ${item._props.RolloffMultiplier}dB 
-						` +
-							newLine +
-							newLine
+						// 						const headsetststs =
+						// 							`AmbientCompressorSendLevel: ${item._props.AmbientCompressorSendLevel}dB
+						// AmbientVolume: ${item._props.AmbientVolume}dB
+						// CompressorAttack: ${item._props.CompressorAttack}ms
+						// CompressorGain: ${item._props.CompressorGain}dB
+						// CompressorRelease: ${item._props.CompressorRelease}ms
+						// CompressorThreshold: ${item._props.CompressorThreshold}dB
+						// Distortion: ${item._props.Distortion * 100}%
+						// DryVolume: ${item._props.DryVolume}dB
+						// EffectsReturnsCompressorSendLevel: ${item._props.EffectsReturnsCompressorSendLevel}dB
+						// EffectsReturnsGroupVolume: ${item._props.EffectsReturnsGroupVolume}dB
+						// EnvCommonCompressorSendLevel: ${item._props.EnvCommonCompressorSendLevel}dB
+						// EnvNatureCompressorSendLevel: ${item._props.EnvNatureCompressorSendLevel}dB
+						// EnvTechnicalCompressorSendLevel: ${item._props.EnvTechnicalCompressorSendLevel}dB
+						// GunsCompressorSendLevel: ${item._props.GunsCompressorSendLevel}dB
+						// HeadphonesMixerVolume: ${item._props.HeadphonesMixerVolume}dB
+						// HighpassFreq: ${item._props.HighpassFreq}dB
+						// HighpassResonance: ${item._props.HighpassResonance}dB
+						// LowpassFreq: ${item._props.LowpassFreq}dB
+						// NpcCompressorSendLevel: ${item._props.NpcCompressorSendLevel}dB
+						// ObservedPlayerCompressorSendLevel: ${item._props.ObservedPlayerCompressorSendLevel}dB
+						// RolloffMultiplier: ${item._props.RolloffMultiplier}dB
+						// 						` +
+						// 							newLine +
+						// 							newLine
 
 						// log(this.getItemName(itemID))
 						// log(headsetDescription)
@@ -1169,7 +1170,7 @@ RolloffMultiplier: ${item._props.RolloffMultiplier}dB
 		return (this.items[itemID]._props.Width * this.items[itemID]._props.Height) / this.items[itemID]._props.StackMaxSize
 	}
 
-	getItemInHandbook(itemID: string): HandbookItem {
+	getItemInHandbook(itemID: string): IHandbookItem {
 		try {
 			return this.handbook.Items.find((i) => i.Id === itemID) // Outs: @Id, @ParentId, @Price
 		} catch (error) {
@@ -1640,7 +1641,7 @@ const log = (i) => {
 }
 
 // A silly solution to some weird recursion logic that adds values to an object that shouldn't have them
-interface PlaceholderItem extends Item {
+interface PlaceholderItem extends IItem {
 	originalItemID?: string
 }
 
