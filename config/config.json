@@ -82,7 +82,9 @@
 		"_description": "Adds armor stats for armor level (usefull for Realism mod), effective durability calculation, material quality and per repair degradation.",
 		"enabled": true,
 		"_example": "[BNTI Zhuk-6a body armor] Armor class: 6 | Effective durability: 94 (Max: 75 x Ceramic: 1.3) | Repair degradation: 17% - 22%",
-		"addArmorClassInfo": true
+		"addArmorClassInfo": true,
+		"addArmorToName": true,
+		"addArmorToShortName": true
 	},
 	"ContainerInfo": {
 		"_description": "Adds slot efficiency calculation for rigs, backpacks and containers (number of internal slots / item size).",

@@ -489,22 +489,22 @@ class ItemInfo implements IPostDBLoadMod {
 			for (const lang in translations) {
 				if (
 					translations.debug.enabled &&
-					lang != "en" &&
-					lang == translations.debug.languageToDebug &&
+					lang !== "en" &&
+					lang === translations.debug.languageToDebug &&
 					translations[translations.debug.languageToDebug][key] == translations["en"][key] &&
-					key != ""
+					key !== ""
 				) {
 					this.logger.warning(
-						translations.debug.languageToDebug + ` language "${translations[translations.debug.languageToDebug][key]}" is the same as in English`
+						`${translations.debug.languageToDebug} language "${translations[translations.debug.languageToDebug][key]}" is the same as in English`
 					)
 				}
 
-				if (key in translations[lang] == false) {
-					if (translations.debug.enabled && translations.debug.languageToDebug == lang) {
+				if (key in translations[lang] === false) {
+					if (translations.debug.enabled && translations.debug.languageToDebug === lang) {
 						this.logger.warning(`${lang} language is missing "${key}" transaition!`)
 					}
 
-					translations[lang][key] = translations["en"][key]
+					translations[lang][key] = translations.en[key]
 				}
 			}
 		}
@@ -529,17 +529,19 @@ class ItemInfo implements IPostDBLoadMod {
 		// P.S. Is there a way to access last user selected locale at IPreAkiLoadMod?
 		//}
 
-		this.euroRatio = this.handbook.Items.find((x) => x.Id == "569668774bdc2da2298b4568").Price
-		this.dollarRatio = this.handbook.Items.find((x) => x.Id == "5696686a4bdc2da3298b456a").Price
+		this.euroRatio = this.handbook.Items.find((x) => x.Id === "569668774bdc2da2298b4568").Price
+		this.dollarRatio = this.handbook.Items.find((x) => x.Id === "5696686a4bdc2da3298b456a").Price
 
 		this.questRewardsDB = {}
 
 		for (const questID in this.quests) {
-			const questRewards = this.quests[questID].rewards.Started.concat(this.quests[questID].rewards.Success).filter((x) => x.type == "AssortmentUnlock")
+			const questRewards = this.quests[questID].rewards.Started.concat(this.quests[questID].rewards.Success).filter((x) => x.type === "AssortmentUnlock")
 			if (questRewards.length > 1) {
 				this.questRewardsDB[questID] = {}
+				// biome-ignore lint/complexity/noForEach: <explanation>
 				questRewards.forEach((i) => {
 					this.questRewardsDB[questID][i.target] = []
+					// biome-ignore lint/complexity/noForEach: <explanation>
 					i.items.forEach((x) => this.questRewardsDB[questID][i.target].push(x._tpl))
 				})
 			}
@@ -579,9 +581,9 @@ class ItemInfo implements IPostDBLoadMod {
 
 			if (
 				item._type === "Item" && // Check if the item is a real item and not a "node" type.
-				itemInHandbook != undefined && // Ignore "useless" items
+				itemInHandbook !== undefined && // Ignore "useless" items
 				!item._props.QuestItem && // Ignore quest items.
-				item._parent != "543be5dd4bdc2deb348b4569" // Ignore currencies.
+				item._parent !== "543be5dd4bdc2deb348b4569" // Ignore currencies.
 			) {
 				const name = this.getItemName(itemID, userLocale) // for debug only
 				// item._props.ExaminedByDefault = true // DEBUG!!!
@@ -653,8 +655,8 @@ class ItemInfo implements IPostDBLoadMod {
 						this.itemHelper.isOfBaseclass(itemID, BaseClasses.ARMOR_PLATE) ||
 						this.itemHelper.isOfBaseclass(itemID, BaseClasses.VEST) ||
 						this.itemHelper.isOfBaseclass(itemID, BaseClasses.WEAPON) ||
-						item._parent == "57bef4c42459772e8d35a53b") && // strictly ARMORED_EQUIPMENT
-					barterInfo.barters.length == 0 &&
+						item._parent === "57bef4c42459772e8d35a53b") && // strictly ARMORED_EQUIPMENT
+					barterInfo.barters.length === 0 &&
 					!isBanned
 				) {
 					itemRarity = 6
@@ -667,7 +669,7 @@ class ItemInfo implements IPostDBLoadMod {
 					// log(`${this.getItemName(itemID)}, ${itemRarity} | ${rarityArray}`)
 				}
 
-				if (item._parent == "543be5cb4bdc2deb348b4568") {
+				if (item._parent === "543be5cb4bdc2deb348b4568") {
 					// Ammo boxes special case
 					const count = item._props.StackSlots[0]._max_count
 					const ammo = item._props.StackSlots[0]._props.filters[0].Filter[0]
@@ -676,7 +678,7 @@ class ItemInfo implements IPostDBLoadMod {
 					// let value = this.getItemInHandbook(ammo).price
 					traderPrice = value * count
 
-					if (!itemRarity || itemRarity == 7) {
+					if (!itemRarity || itemRarity === 7) {
 						itemRarity = bsgBlacklist.includes(ammo) ? 7 : Math.min(...this.barterInfoGenerator(this.bartersResolver(ammo)).rarity) // my magnum opus
 					}
 				}
@@ -705,35 +707,35 @@ class ItemInfo implements IPostDBLoadMod {
 					// item._props.BackgroundColor = "grey"
 
 					for (const customItem in config.RarityRecolor.customRarity) {
-						if (customItem == itemID) {
+						if (customItem === itemID) {
 							itemRarity = config.RarityRecolor.customRarity[customItem]
 						}
 					}
 
-					if (itemRarity == 7) {
+					if (itemRarity === 7) {
 						tier = i18n.OVERPOWERED
 						item._props.BackgroundColor = tiers.OVERPOWERED
 						// log(`${itemID} | ${this.getItemName(itemID)}`)
-					} else if (itemRarity == 1) {
+					} else if (itemRarity === 1) {
 						tier = i18n.COMMON
 						item._props.BackgroundColor = tiers.COMMON
-					} else if (itemRarity == 2) {
+					} else if (itemRarity === 2) {
 						tier = i18n.RARE
 						item._props.BackgroundColor = tiers.RARE
-					} else if (itemRarity == 3) {
+					} else if (itemRarity === 3) {
 						tier = i18n.EPIC
 						item._props.BackgroundColor = tiers.EPIC
-					} else if (itemRarity == 4) {
+					} else if (itemRarity === 4) {
 						tier = i18n.LEGENDARY
 						item._props.BackgroundColor = tiers.LEGENDARY
-					} else if (itemRarity == 5) {
+					} else if (itemRarity === 5) {
 						tier = i18n.UBER
 						item._props.BackgroundColor = tiers.UBER
-					} else if (itemRarity == 6) {
+					} else if (itemRarity === 6) {
 						// can get 6 from custom rules only
 						tier = i18n.UNOBTAINIUM
 						item._props.BackgroundColor = tiers.UNOBTAINIUM
-					} else if (itemRarity == 8) {
+					} else if (itemRarity === 8) {
 						// 8 is for custom dim red background
 						tier = i18n.CUSTOM
 						item._props.BackgroundColor = tiers.CUSTOM
@@ -743,7 +745,7 @@ class ItemInfo implements IPostDBLoadMod {
 						item._props.BackgroundColor = tiers.CUSTOM2
 					}
 
-					if (config.RarityRecolor.fallbackValueBasedRecolor && itemRarity == 0) {
+					if (config.RarityRecolor.fallbackValueBasedRecolor && itemRarity === 0) {
 						let itemValue = itemInHandbook.Price
 
 						const itemSlots = item._props.Width * item._props.Height
@@ -752,7 +754,7 @@ class ItemInfo implements IPostDBLoadMod {
 						}
 						// log(`"${itemID}", // ${name}, ${item._props.BackgroundColor}, ${itemValue}`)
 
-						if (item._parent == "543be5cb4bdc2deb348b4568") {
+						if (item._parent === "543be5cb4bdc2deb348b4568") {
 							// Ammo boxes special case
 							const count = item._props.StackSlots[0]._max_count
 							const ammo = item._props.StackSlots[0]._props.filters[0].Filter[0]
@@ -784,7 +786,7 @@ class ItemInfo implements IPostDBLoadMod {
 					}
 					if (config.RarityRecolor.addTierNameToPricesInfo) {
 						if (tier.length > 0) {
-							priceString += tier + " | "
+							priceString += `${tier} | `
 						}
 					}
 				}
@@ -807,7 +809,7 @@ class ItemInfo implements IPostDBLoadMod {
 						}
 						const slotefficiency = roundWithPrecision(totalSlots / (item._props.Width * item._props.Height), 2)
 						// prettier-ignore
-						slotefficiencyString += `${i18n.Slotefficiency}: ×${slotefficiency} (${totalSlots}/${item._props.Width * item._props.Height})` + newLine + newLine;
+						slotefficiencyString += `${i18n.Slotefficiency}: ×${slotefficiency} (${totalSlots}/${item._props.Width * item._props.Height})${newLine + newLine}`;
 						// log(name)
 						// log(slotefficiencyString)
 					}
@@ -834,10 +836,10 @@ class ItemInfo implements IPostDBLoadMod {
 						fleaValue = fleaPrice / slotDensity
 					}
 
-					if (this.items[itemID]._parent != "5795f317245977243854e041") {
+					if (this.items[itemID]._parent !== "5795f317245977243854e041") {
 						// ignore containers
 						if (itemvalue > config.MarkValueableItems.traderSlotValueThresholdBest || fleaValue > config.MarkValueableItems.fleaSlotValueThresholdBest) {
-							if (userLocale == "jp" || userLocale == "kr" || config.MarkValueableItems.useAltValueMarks) {
+							if (userLocale === "jp" || userLocale === "kr" || config.MarkValueableItems.useAltValueMarks) {
 								if (config.MarkValueableItems.addToShortName) {
 									this.addToShortName(itemID, config.MarkValueableItems.AltBestValueMark, "prepend")
 								}
@@ -854,7 +856,7 @@ class ItemInfo implements IPostDBLoadMod {
 								}
 							}
 						} else if (itemvalue > config.MarkValueableItems.traderSlotValueThresholdGood || fleaValue > config.MarkValueableItems.fleaSlotValueThresholdGood) {
-							if (userLocale == "jp" || userLocale == "kr" || config.MarkValueableItems.useAltValueMarks) {
+							if (userLocale === "jp" || userLocale === "kr" || config.MarkValueableItems.useAltValueMarks) {
 								if (config.MarkValueableItems.addToShortName) {
 									this.addToShortName(itemID, config.MarkValueableItems.AltGoodValueMark, "prepend")
 								}
@@ -886,7 +888,7 @@ class ItemInfo implements IPostDBLoadMod {
 						const thresh = item._props.CompressorThreshold
 						// prettier-ignore
 						// headsetDescription = `${i18n.AmbientVolume}: ${item._props.AmbientCompressorSendLevel+10}dB | ${i18n.Compressor}: ${i18n.Gain} +${gain}dB × ${i18n.Treshold} ${thresh}dB ≈ ×${Math.abs((gain * (thresh+20)) / 10)} ${i18n.Boost} | ${i18n.ResonanceFilter}: ${item._props.HighpassResonance}@${item._props.HighpassFreq}Hz | ${i18n.Distortion}: ${Math.round(item._props.Distortion * 100)}%` + newLine + newLine;
-						headsetDescription = `${i18n.AmbientVolume}: ${Math.round((item._props.AmbientCompressorSendLevel+10 + item._props.EnvCommonCompressorSendLevel+7 + item._props.EnvNatureCompressorSendLevel+5 + item._props.EnvTechnicalCompressorSendLevel+7) * 10)/10}dB | ${i18n.Boost}: +${((gain + Math.abs(thresh+20)))}dB  | ${i18n.Distortion}: ${Math.round(item._props.Distortion * 100)}%` + newLine + newLine;
+						headsetDescription = `${i18n.AmbientVolume}: ${Math.round((item._props.AmbientCompressorSendLevel+10 + item._props.EnvCommonCompressorSendLevel+7 + item._props.EnvNatureCompressorSendLevel+5 + item._props.EnvTechnicalCompressorSendLevel+7) * 10)/10}dB | ${i18n.Boost}: +${((gain + Math.abs(thresh+20)))}dB  | ${i18n.Distortion}: ${Math.round(item._props.Distortion * 100)}%${newLine + newLine}`;
 
 						// 						const headsetststs =
 						// 							`AmbientCompressorSendLevel: ${item._props.AmbientCompressorSendLevel}dB
@@ -1112,7 +1114,7 @@ class ItemInfo implements IPostDBLoadMod {
 	}
 
 	addToName(itemID: string, addToName: string, place: "prepend" | "append", lang = ""): void {
-		if (lang == "") {
+		if (lang === "") {
 			// I'm actually really proud of this one! If no lang argument is passed, it defaults to recursion for all languages.
 			for (const locale in this.locales) {
 				this.addToName(itemID, addToName, place, locale)
@@ -1131,7 +1133,7 @@ class ItemInfo implements IPostDBLoadMod {
 	}
 
 	addToShortName(itemID: string, addToShortName: string, place: "prepend" | "append", lang = ""): void {
-		if (lang == "") {
+		if (lang === "") {
 			for (const locale in this.locales) {
 				this.addToShortName(itemID, addToShortName, place, locale)
 			}
@@ -1149,7 +1151,7 @@ class ItemInfo implements IPostDBLoadMod {
 	}
 
 	addToDescription(itemID: string, addToDescription: string, place: "prepend" | "append", lang = ""): void {
-		if (lang == "") {
+		if (lang === "") {
 			for (const locale in this.locales) {
 				this.addToDescription(itemID, addToDescription, place, locale)
 			}
@@ -1226,7 +1228,7 @@ class ItemInfo implements IPostDBLoadMod {
 	}
 
 	getFleaPrice(itemID: string): number {
-		if (typeof this.fleaPrices[itemID] != "undefined") {
+		if (typeof this.fleaPrices[itemID] !== "undefined") {
 			// Forgot quotes, typeof returns string..
 			return this.fleaPrices[itemID]
 		} else if (typeof this.getItemInHandbook(itemID)?.Price != "undefined") {
@@ -1237,7 +1239,7 @@ class ItemInfo implements IPostDBLoadMod {
 	}
 
 	getBestPrice(itemID: string): number {
-		if (typeof this.fleaPrices[itemID] != "undefined") {
+		if (typeof this.fleaPrices[itemID] !== "undefined") {
 			return this.fleaPrices[itemID]
 		} else {
 			return this.getItemBestTrader(itemID).price
@@ -1310,13 +1312,13 @@ class ItemInfo implements IPostDBLoadMod {
 
 			let isBarter = false
 			for (const resource of barter.barterResources) {
-				if (resource._tpl == "5449016a4bdc2d6f028b456f") {
+				if (resource._tpl === "5449016a4bdc2d6f028b456f") {
 					const rubles = resource.count
 					barterString += `${this.formatPrice(Math.round(rubles))}₽ + `
-				} else if (resource._tpl == "569668774bdc2da2298b4568") {
+				} else if (resource._tpl === "569668774bdc2da2298b4568") {
 					const euro = resource.count
 					barterString += `${this.formatPrice(Math.round(euro))}€ ≈ ${this.formatPrice(Math.round(this.euroRatio * euro))}₽ + `
-				} else if (resource._tpl == "5696686a4bdc2da3298b456a") {
+				} else if (resource._tpl === "5696686a4bdc2da3298b456a") {
 					const dollars = resource.count
 					barterString += `$${this.formatPrice(Math.round(dollars))} ≈ ${this.formatPrice(Math.round(this.dollarRatio * dollars))}₽ + `
 				} else {
@@ -1333,7 +1335,7 @@ class ItemInfo implements IPostDBLoadMod {
 				rarityArray.push(barter.barterLoyaltyLevel)
 			}
 
-			if (totalBarterPrice != 0) {
+			if (totalBarterPrice !== 0) {
 				totalBarterPriceString = ` | Σ ≈ ${this.formatPrice(Math.round(totalBarterPrice))}₽`
 			}
 
@@ -1343,7 +1345,7 @@ class ItemInfo implements IPostDBLoadMod {
 			prices: prices, //TODO
 			barters: barterString,
 			// rarity: rarityArray.length == 0 ? 0 : Math.min(...rarityArray),
-			rarity: rarityArray.length == 0 ? [0] : rarityArray,
+			rarity: rarityArray.length === 0 ? [0] : rarityArray,
 		}
 	}
 
@@ -1367,21 +1369,21 @@ class ItemInfo implements IPostDBLoadMod {
 							}
 						}
 
-						baseBarterString += translations[locale].Traded + " ×" + trader.assort.barter_scheme[barterID][0][srcs].count + " "
+						baseBarterString += `${translations[locale].Traded} ×${trader.assort.barter_scheme[barterID][0][srcs].count} `
 						baseBarterString +=
-							translations[locale].at + " " + traderName + " " + translations[locale].lv + barterLoyaltyLevel + " > " + this.getItemName(bartedForItem, locale)
+							`${translations[locale].at} ${traderName} ${translations[locale].lv}${barterLoyaltyLevel} > ${this.getItemName(bartedForItem, locale)}`
 
 						let extendedBarterString = " < … + "
 						for (const barterResource in barterResources) {
 							totalBarterPrice += this.getFleaPrice(barterResources[barterResource]._tpl) * barterResources[barterResource].count
-							if (barterResources[barterResource]._tpl != itemID) {
+							if (barterResources[barterResource]._tpl !== itemID) {
 								extendedBarterString += this.getItemShortName(barterResources[barterResource]._tpl, locale)
 								extendedBarterString += ` ×${barterResources[barterResource].count} + `
 							}
 						}
 
 						const barterStringToAppend =
-							totalBarterPrice != 0 ? ` | Δ ≈ ${this.formatPrice(Math.round(this.getFleaPrice(bartedForItem) - totalBarterPrice))}₽` : null
+							totalBarterPrice !== 0 ? ` | Δ ≈ ${this.formatPrice(Math.round(this.getFleaPrice(bartedForItem) - totalBarterPrice))}₽` : null
 
 						extendedBarterString = extendedBarterString.slice(0, extendedBarterString.length - 3)
 						extendedBarterString += barterStringToAppend
@@ -1428,7 +1430,7 @@ class ItemInfo implements IPostDBLoadMod {
 
 					for (const requirement of recipe.requirements) {
 						if (requirement.type === "Area") {
-							recipeAreaString = this.getCraftingAreaName(requirement.areaType, locale) + " " + translations[locale].lv + requirement.requiredLevel
+							recipeAreaString = `${this.getCraftingAreaName(requirement.areaType, locale)} ${translations[locale].lv}${requirement.requiredLevel}`
 							rarityArray.push(this.getCraftingRarity(requirement.areaType, requirement.requiredLevel))
 						}
 						if (requirement.type === "Item") {
@@ -1436,7 +1438,7 @@ class ItemInfo implements IPostDBLoadMod {
 							const craftComponentCount = requirement.count
 							const craftComponentPrice = this.getFleaPrice(craftComponentId)
 
-							componentsString += this.getItemShortName(craftComponentId, locale) + " ×" + craftComponentCount + " + "
+							componentsString += `${this.getItemShortName(craftComponentId, locale)} ×${craftComponentCount} + `
 							totalRecipePrice += craftComponentPrice * craftComponentCount
 						}
 						if (requirement.type === "Resource") {
@@ -1445,7 +1447,7 @@ class ItemInfo implements IPostDBLoadMod {
 							const resourceProportion = requirement.resource / this.items[requirement.templateId]._props.Resource
 							const craftComponentPrice = this.getFleaPrice(craftComponentId)
 
-							componentsString += this.getItemShortName(craftComponentId, locale) + " ×" + Math.round(resourceProportion * 100) + "%" + " + "
+							componentsString += `${this.getItemShortName(craftComponentId, locale)} ×${Math.round(resourceProportion * 100)}% + `
 							totalRecipePrice += Math.round(craftComponentPrice * resourceProportion)
 						}
 						if (requirement.type === "QuestComplete") {
@@ -1459,7 +1461,7 @@ class ItemInfo implements IPostDBLoadMod {
 					}
 
 					if (recipe.count > 1) {
-						recipeDivision = " " + translations[locale].peritem
+						recipeDivision = ` ${translations[locale].peritem}`
 					}
 
 					componentsString = componentsString.slice(0, componentsString.length - 3)
@@ -1541,23 +1543,23 @@ class ItemInfo implements IPostDBLoadMod {
 					let questReq = ""
 
 					for (const requirement of recipe.requirements) {
-						if (requirement.type == "Area") {
+						if (requirement.type === "Area") {
 							// prettier-ignore
-							recipeAreaString = this.getCraftingAreaName(requirement.areaType, locale) + " " + translations[locale].lv + requirement.requiredLevel
+							recipeAreaString = `${this.getCraftingAreaName(requirement.areaType, locale)} ${translations[locale].lv}${requirement.requiredLevel}`
 						}
-						if (requirement.type == "Item") {
+						if (requirement.type === "Item") {
 							const craftComponent = requirement
-							if (craftComponent.templateId != itemID) {
-								usedForCraftingComponentsString += this.getItemShortName(craftComponent.templateId, locale) + " ×" + craftComponent.count + " + "
+							if (craftComponent.templateId !== itemID) {
+								usedForCraftingComponentsString += `${this.getItemShortName(craftComponent.templateId, locale)} ×${craftComponent.count} + `
 							}
 							totalRecipePrice += this.getFleaPrice(craftComponent.templateId) * craftComponent.count
 						}
-						if (requirement.type == "Resource") {
+						if (requirement.type === "Resource") {
 							const craftComponent = requirement
 							const resourceProportion = craftComponent.resource / this.items[craftComponent.templateId]._props.Resource
-							if (craftComponent.templateId != itemID) {
+							if (craftComponent.templateId !== itemID) {
 								usedForCraftingComponentsString +=
-									this.getItemShortName(craftComponent.templateId, locale) + " ×" + Math.round(resourceProportion * 100) + "%" + " + "
+									`${this.getItemShortName(craftComponent.templateId, locale)} ×${Math.round(resourceProportion * 100)}% + `
 							}
 							totalRecipePrice += Math.round(this.getFleaPrice(craftComponent.templateId) * resourceProportion)
 						}
@@ -1569,7 +1571,7 @@ class ItemInfo implements IPostDBLoadMod {
 					// prettier-ignore
 					usedForCraftingComponentsString += ` | Δ ≈ ${this.formatPrice(Math.round(this.getFleaPrice(recipe.endProduct) * recipe.count - totalRecipePrice))}₽`
 					// prettier-ignore
-					usedForCraftingString += `${recipe.requirements[s].type == "Tool" ? translations[locale].Tool : translations[locale].Part + " ×" + recipe.requirements[s].count} > ${this.getItemName(recipe.endProduct, locale)} ×${recipe.count}`
+					usedForCraftingString += `${recipe.requirements[s].type === "Tool" ? translations[locale].Tool : translations[locale].Part + " ×" + recipe.requirements[s].count} > ${this.getItemName(recipe.endProduct, locale)} ×${recipe.count}`
 					usedForCraftingString += ` @ ${recipeAreaString + questReq + usedForCraftingComponentsString}\n`
 				}
 			}
@@ -1588,7 +1590,7 @@ class ItemInfo implements IPostDBLoadMod {
 			const questConditions = this.quests[questID].conditions.AvailableForFinish
 
 			for (const condition of questConditions) {
-				if (condition.conditionType == "HandoverItem" && condition.target.includes(itemID)) {
+				if (condition.conditionType === "HandoverItem" && condition.target.includes(itemID)) {
 					const trader = this.quests[questID].traderId
 					//let tradeName = tables.traders[trader].base.nickname
 					const traderName = this.locales[locale][`${trader} Nickname`]
@@ -1612,11 +1614,11 @@ class ItemInfo implements IPostDBLoadMod {
 						if (item._tpl.includes(itemID)) {
 							// prettier-ignore
 							// unlockString += `${splitRewardString[0]}${traderName} ${translations[locale].lv}${ll}${splitRewardString[1]} > "${questName}"\n`
-							if (item._id != results.target){
-								partString = this.getItemName(results.items.find(x => x._id == results.target)._tpl, locale)
+							if (item._id !== results.target){
+								partString = this.getItemName(results.items.find(x => x._id === results.target)._tpl, locale)
 							}
 							// prettier-ignore
-							unlockString += `↺ "${questName}"${traderName == questGiverName ? "" : " " + questGiverName}✔ @ ${traderName} ${translations[locale].lv}${ll}${partString.length > 0 ? " ∈ " + partString : ""}\n`
+							unlockString += `↺ "${questName}"${traderName === questGiverName ? "" : ` ${questGiverName}`}✔ @ ${traderName} ${translations[locale].lv}${ll}${partString.length > 0 ? ` ∈ ${partString}` : ""}\n`
 							// if (trader == "6617beeaa9cfa777ca915b7c") {
 							// 	log(`${this.getItemName(itemID, locale)}:\n${unlockString}`)
 							// }
@@ -1631,7 +1633,7 @@ class ItemInfo implements IPostDBLoadMod {
 }
 
 function roundWithPrecision(num: number, precision: number): number {
-	const multiplier = Math.pow(10, precision)
+	const multiplier = 10 ** precision
 	return Math.round(num * multiplier) / multiplier
 }
 

@@ -1,6 +1,6 @@
 node_modules/
 mod.code-workspace
 dist/
-*.js
-*.map
+**/*.js
+**/*.map
 types/
