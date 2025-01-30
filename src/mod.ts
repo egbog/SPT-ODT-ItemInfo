@@ -485,13 +485,13 @@ class ItemInfo implements IPostDBLoadMod {
 		}
 
 		// Fill the missing translation dictionaries with English keys as a fallback + debug mode to help translations. Smart.
-		for (const key in translations["en"]) {
+		for (const key in translations.en) {
 			for (const lang in translations) {
 				if (
 					translations.debug.enabled &&
 					lang !== "en" &&
 					lang === translations.debug.languageToDebug &&
-					translations[translations.debug.languageToDebug][key] == translations["en"][key] &&
+					translations[translations.debug.languageToDebug][key] === translations.en[key] &&
 					key !== ""
 				) {
 					this.logger.warning(
@@ -885,8 +885,13 @@ class ItemInfo implements IPostDBLoadMod {
 				}
 
 				if (config.PricesInfo.enabled) {
-					// prettier-ignore
-					priceString += (config.PricesInfo.addFleaPrice ? i18n.Fleaprice + ": " + this.formatPrice(fleaPrice) + (fleaPrice > 0 ? "₽" : "") + " | " : "") + (config.PricesInfo.addItemValue ? i18n.ItemValue + ": " + this.formatPrice(itemInHandbook.Price) + " | " : "")  + i18n.Valuation1 + traderName + i18n.Valuation2 + ": " + this.formatPrice(traderPrice) + "₽" + newLine + newLine;
+					priceString += `${
+						(config.PricesInfo.addFleaPrice ? `${i18n.Fleaprice}: ${this.formatPrice(fleaPrice)}${fleaPrice > 0 ? "₽" : ""} | ` : "") +
+						(config.PricesInfo.addItemValue ? `${i18n.ItemValue}: ${this.formatPrice(itemInHandbook.Price)} | ` : "") +
+						i18n.Valuation1 +
+						traderName +
+						i18n.Valuation2
+					}: ${this.formatPrice(traderPrice)}₽${newLine + newLine}`
 
 					// log(priceString)
 				}
@@ -1083,11 +1088,11 @@ class ItemInfo implements IPostDBLoadMod {
 	}
 
 	getItemName(itemID: string, locale = "en"): string {
-		if (typeof this.locales[locale][`${itemID} Name`] != "undefined") {
+		if (typeof this.locales[locale][`${itemID} Name`] !== "undefined") {
 			return this.locales[locale][`${itemID} Name`]
-		} else if (typeof this.locales["en"][`${itemID} Name`] != "undefined") {
+		} else if (typeof this.locales["en"][`${itemID} Name`] !== "undefined") {
 			return this.locales["en"][`${itemID} Name`]
-		} else if (typeof this.items[itemID]?._props?.Name != "undefined") {
+		} else if (typeof this.items[itemID]?._props?.Name !== "undefined") {
 			return this.items[itemID]._props.Name // If THIS fails, the modmaker REALLY fucked up
 		} else {
 			return
@@ -1095,9 +1100,9 @@ class ItemInfo implements IPostDBLoadMod {
 	}
 
 	getItemShortName(itemID: string, locale = "en"): string {
-		if (typeof this.locales[locale][`${itemID} ShortName`] != "undefined") {
+		if (typeof this.locales[locale][`${itemID} ShortName`] !== "undefined") {
 			return this.locales[locale][`${itemID} ShortName`]
-		} else if (typeof this.locales["en"][`${itemID} ShortName`] != "undefined") {
+		} else if (typeof this.locales["en"][`${itemID} ShortName`] !== "undefined") {
 			return this.locales["en"][`${itemID} ShortName`]
 		} else {
 			return this.items[itemID]._props.ShortName
@@ -1105,9 +1110,9 @@ class ItemInfo implements IPostDBLoadMod {
 	}
 
 	getItemDescription(itemID: string, locale = "en"): string {
-		if (typeof this.locales[locale][`${itemID} Description`] != "undefined") {
+		if (typeof this.locales[locale][`${itemID} Description`] !== "undefined") {
 			return this.locales[locale][`${itemID} Description`]
-		} else if (typeof this.locales["en"][`${itemID} Description`] != "undefined") {
+		} else if (typeof this.locales["en"][`${itemID} Description`] !== "undefined") {
 			return this.locales["en"][`${itemID} Description`]
 		} else {
 			return this.items[itemID]._props.Description
@@ -1115,7 +1120,7 @@ class ItemInfo implements IPostDBLoadMod {
 	}
 
 	formatPrice(price: number): string {
-		if (typeof price == "number" && config.FormatPrice) {
+		if (typeof price === "number" && config.FormatPrice) {
 			return Intl.NumberFormat("en-US").format(price)
 		} else {
 			return price.toString()
@@ -1240,7 +1245,7 @@ class ItemInfo implements IPostDBLoadMod {
 		if (typeof this.fleaPrices[itemID] !== "undefined") {
 			// Forgot quotes, typeof returns string..
 			return this.fleaPrices[itemID]
-		} else if (typeof this.getItemInHandbook(itemID)?.Price != "undefined") {
+		} else if (typeof this.getItemInHandbook(itemID)?.Price !== "undefined") {
 			return this.getItemInHandbook(itemID).Price
 		} else {
 			return 0
@@ -1261,14 +1266,14 @@ class ItemInfo implements IPostDBLoadMod {
 		try {
 			this.traderList.forEach((trader) => {
 				const allTraderBarters = trader.assort.items
-				const traderBarters = allTraderBarters.filter((x) => x._tpl == itemID)
+				const traderBarters = allTraderBarters.filter((x) => x._tpl === itemID)
 
 				const barters = traderBarters
 					.map((barter) => recursion(barter)) // find and get list of "parent items" for a passed component
 					.map((barter) => ({
 						// reset parentItem for actual parent items because of recursion function.
 						// can be done in a more elegant way, but i'm too tired after a night of debugging. who cares anyway, it works.
-						parentItem: barter.originalItemID ? (barter.originalItemID == itemID ? null : barter.originalItemID) : null,
+						parentItem: barter.originalItemID ? (barter.originalItemID === itemID ? null : barter.originalItemID) : null,
 						barterResources: trader.assort.barter_scheme[barter._id][0],
 						barterLoyaltyLevel: trader.assort.loyal_level_items[barter._id],
 						traderID: trader.base._id,
@@ -1278,14 +1283,14 @@ class ItemInfo implements IPostDBLoadMod {
 				itemBarters.push(...barters)
 
 				function recursion(barter: PlaceholderItem): PlaceholderItem {
-					if (barter.parentId == "hideout") {
+					if (barter.parentId === "hideout") {
 						return barter
 					} else {
 						let parentBarter
 						try {
 							// spent literary 12 hours debugging this feature... KMP.
 							// all because of one item, SWORD International Mk-18 not having proper .parentId is assort table. who would have thought. thx Nikita
-							parentBarter = allTraderBarters.find((x) => x._id == barter.parentId)
+							parentBarter = allTraderBarters.find((x) => x._id === barter.parentId)
 							parentBarter.originalItemID = parentBarter._tpl
 						} catch (error) {
 							return barter // FML
@@ -1348,7 +1353,7 @@ class ItemInfo implements IPostDBLoadMod {
 				totalBarterPriceString = ` | Σ ≈ ${this.formatPrice(Math.round(totalBarterPrice))}₽`
 			}
 
-			barterString = barterString.slice(0, barterString.length - 3) + totalBarterPriceString + "\n"
+			barterString = `${barterString.slice(0, barterString.length - 3) + totalBarterPriceString}\n`
 		}
 		return {
 			prices: prices, //TODO
@@ -1373,14 +1378,16 @@ class ItemInfo implements IPostDBLoadMod {
 						const barterLoyaltyLevel = trader.assort.loyal_level_items[barterID]
 
 						for (const originalBarter in trader.assort.items) {
-							if (trader.assort.items[originalBarter]._id == barterID) {
+							if (trader.assort.items[originalBarter]._id === barterID) {
 								bartedForItem = trader.assort.items[originalBarter]._tpl
 							}
 						}
 
 						baseBarterString += `${translations[locale].Traded} ×${trader.assort.barter_scheme[barterID][0][srcs].count} `
-						baseBarterString +=
-							`${translations[locale].at} ${traderName} ${translations[locale].lv}${barterLoyaltyLevel} > ${this.getItemName(bartedForItem, locale)}`
+						baseBarterString += `${translations[locale].at} ${traderName} ${translations[locale].lv}${barterLoyaltyLevel} > ${this.getItemName(
+							bartedForItem,
+							locale
+						)}`
 
 						let extendedBarterString = " < … + "
 						for (const barterResource in barterResources) {
@@ -1567,8 +1574,7 @@ class ItemInfo implements IPostDBLoadMod {
 							const craftComponent = requirement
 							const resourceProportion = craftComponent.resource / this.items[craftComponent.templateId]._props.Resource
 							if (craftComponent.templateId !== itemID) {
-								usedForCraftingComponentsString +=
-									`${this.getItemShortName(craftComponent.templateId, locale)} ×${Math.round(resourceProportion * 100)}% + `
+								usedForCraftingComponentsString += `${this.getItemShortName(craftComponent.templateId, locale)} ×${Math.round(resourceProportion * 100)}% + `
 							}
 							totalRecipePrice += Math.round(this.getFleaPrice(craftComponent.templateId) * resourceProportion)
 						}
@@ -1580,7 +1586,7 @@ class ItemInfo implements IPostDBLoadMod {
 					// prettier-ignore
 					usedForCraftingComponentsString += ` | Δ ≈ ${this.formatPrice(Math.round(this.getFleaPrice(recipe.endProduct) * recipe.count - totalRecipePrice))}₽`
 					// prettier-ignore
-					usedForCraftingString += `${recipe.requirements[s].type === "Tool" ? translations[locale].Tool : translations[locale].Part + " ×" + recipe.requirements[s].count} > ${this.getItemName(recipe.endProduct, locale)} ×${recipe.count}`
+					usedForCraftingString += `${recipe.requirements[s].type === "Tool" ? translations[locale].Tool : `${translations[locale].Part} ×${recipe.requirements[s].count}`} > ${this.getItemName(recipe.endProduct, locale)} ×${recipe.count}`
 					usedForCraftingString += ` @ ${recipeAreaString + questReq + usedForCraftingComponentsString}\n`
 				}
 			}
@@ -1608,7 +1614,7 @@ class ItemInfo implements IPostDBLoadMod {
 					questString += `${translations[locale].Found} ${condition.onlyFoundInRaid ? "(✔) " : ""}×${condition.value} > ${questName} @ ${traderName}\n`
 				}
 			}
-			const questRewards = this.quests[questID].rewards.Started.concat(this.quests[questID].rewards.Success).filter((x) => x.type == "AssortmentUnlock")
+			const questRewards = this.quests[questID].rewards.Started.concat(this.quests[questID].rewards.Success).filter((x) => x.type === "AssortmentUnlock")
 
 			if (questRewards.length > 0) {
 				const splitRewardString = this.locales[locale]["AssortmentUnlockReward/Description"].split("{0}")
