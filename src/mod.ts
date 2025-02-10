@@ -1,3 +1,7 @@
+// Abandon Hope All Ye Who Enter Here.
+// If you have OCD or at least the slightest sense of beauty, or just have a linter installed, I beg you - just **leave**. You will thank me later.
+
+/* eslint-disable @typescript-eslint/indent */
 /* eslint-disable no-inner-declarations */
 import { DependencyContainer } from "tsyringe"
 
@@ -608,6 +612,7 @@ class ItemInfo implements IPostDBLoadMod {
 				let armorDurabilityString = ""
 				let slotefficiencyString = ""
 				let headsetDescription = ""
+				let advancedAmmoInfoString = ""
 				let tier = ""
 				let itemRarity = 0
 
@@ -703,8 +708,17 @@ class ItemInfo implements IPostDBLoadMod {
 				// 	}
 				// }
 
-				if (config.RarityRecolor.enabled && !config.RarityRecolorBlacklist.includes(item._parent)) {
+				// biome-ignore lint/suspicious/noConfusingLabels: bypassAmmoRecolor and bypassKeysRecolor
+				rarityRecolor: if (config.RarityRecolor.enabled && !config.RarityRecolorBlacklist.includes(item._parent)) {
 					// item._props.BackgroundColor = "grey"
+
+					if (config.RarityRecolor.bypassAmmoRecolor && item._parent === BaseClasses.AMMO) {
+						break rarityRecolor
+					}
+
+					if (config.RarityRecolor.bypassKeysRecolor && (item._parent === BaseClasses.KEY_MECHANICAL || item._parent === BaseClasses.KEYCARD)) {
+						break rarityRecolor
+					}
 
 					for (const customItem in config.RarityRecolor.customRarity) {
 						if (customItem === itemID) {
@@ -741,7 +755,7 @@ class ItemInfo implements IPostDBLoadMod {
 						item._props.BackgroundColor = tiers.CUSTOM
 					} else if (itemRarity >= 9) {
 						// 8 is for custom dim orange background
-						// tier = i18n.CUSTOM2
+						tier = i18n.CUSTOM2
 						item._props.BackgroundColor = tiers.CUSTOM2
 					}
 
@@ -764,28 +778,29 @@ class ItemInfo implements IPostDBLoadMod {
 
 						// TODO: This will generate non-user friendly errors if they f*ck up their config. Maybe needs manual validation to ensure that all tiers.X values are numbers?
 						if (itemValue < Number.parseInt(tiers.COMMON_VALUE_FALLBACK)) {
-							// tier = i18n.COMMON
+							tier = i18n.COMMON
 							item._props.BackgroundColor = tiers.COMMON
 						} else if (itemValue < Number.parseInt(tiers.RARE_VALUE_FALLBACK)) {
-							// tier = i18n.RARE
+							tier = i18n.RARE
 							item._props.BackgroundColor = tiers.RARE
 						} else if (itemValue < Number.parseInt(tiers.EPIC_VALUE_FALLBACK)) {
-							// tier = i18n.EPIC
+							tier = i18n.EPIC
 							item._props.BackgroundColor = tiers.EPIC
 						} else if (itemValue < Number.parseInt(tiers.LEGENDARY_VALUE_FALLBACK)) {
-							// tier = i18n.LEGENDARY
+							tier = i18n.LEGENDARY
 							item._props.BackgroundColor = tiers.LEGENDARY
 						} else if (itemValue < Number.parseInt(tiers.UBER_VALUE_FALLBACK)) {
-							// tier = i18n.UBER
+							tier = i18n.UBER
 							item._props.BackgroundColor = tiers.UBER
 						} else {
 							// log(`"${itemID}", // ${name}, ${item._props.BackgroundColor}, ${itemValue}`)
-							// tier = i18n.UNOBTAINIUM
+							tier = i18n.UNOBTAINIUM
 							item._props.BackgroundColor = tiers.UNOBTAINIUM
 						}
 					}
+
 					if (config.RarityRecolor.addTierNameToPricesInfo) {
-						if (tier.length > 0) {
+						if (tier?.length > 0) {
 							priceString += `${tier} | `
 						}
 					}
@@ -807,6 +822,75 @@ class ItemInfo implements IPostDBLoadMod {
 
 						// log(name)
 						// log(armorDurabilityString)
+					}
+				}
+
+				if (config.AdvancedAmmoInfo.enabled) {
+					if (item._parent === "5485a8684bdc2da71d8b4567") {
+						const ammoProps = item._props
+
+						// welcome to JS hell.
+						advancedAmmoInfoString = `Damage: ${ammoProps.Damage}
+Penetration Power: ${ammoProps.PenetrationPower}
+Armor Damage: ${ammoProps.ArmorDamage}${
+							ammoProps.ProjectileCount > 1
+								? `
+Projectile Count: ${ammoProps.ProjectileCount}`
+								: ""
+						}${
+							ammoProps.buckshotBullets
+								? `
+Buckshot Bullets: ${ammoProps.buckshotBullets}`
+								: ""
+						}
+Initial Speed: ${ammoProps.InitialSpeed}
+Speed Retardation: ${ammoProps.SpeedRetardation}
+Ballistic Coeficient: ${ammoProps.BallisticCoeficient}
+Ammo Tooltip Class: ${ammoProps.AmmoTooltipClass}
+Fragmentation Chance: ${Math.round(ammoProps.FragmentationChance * 100)}%${
+							ammoProps.MaxFragmentsCount > 1
+								? `
+Min Fragments Count: ${ammoProps.MinFragmentsCount}
+Max Fragments Count: ${ammoProps.MaxFragmentsCount}`
+								: ""
+						}
+Ricochet Chance: ${Math.round(ammoProps.RicochetChance * 100)}%
+Misfire Chance: ${Math.round(ammoProps.MisfireChance * 100)}%
+Malf Feed Chance: ${Math.round(ammoProps.MalfFeedChance * 100)}%
+Malf Misfire Chance: ${Math.round(ammoProps.MalfMisfireChance * 100)}%
+Durability Burn Modificator: ${ammoProps.DurabilityBurnModificator}
+Heat Factor: ${ammoProps.HeatFactor}
+Heavy Bleeding Delta: ${ammoProps.HeavyBleedingDelta}
+Light Bleeding Delta: ${ammoProps.LightBleedingDelta}
+Stamina Burn Per Damage: ${ammoProps.StaminaBurnPerDamage}
+${
+	ammoProps.Tracer
+		? `Tracer: Yes
+Tracer Color: ${ammoProps.TracerColor}
+Tracer Distance: ${ammoProps.TracerDistance}`
+		: "Tracer: No"
+}
+Penetration Chance Obstacle: ${ammoProps.PenetrationChanceObstacle}
+Penetration Damage Mod: ${ammoProps.PenetrationDamageMod}
+Penetration Power Diviation: ${ammoProps.PenetrationPowerDiviation}
+Accr(?): ${ammoProps.ammoAccr}
+Dist(?): ${ammoProps.ammoDist}
+Hear(?): ${ammoProps.ammoHear}
+Rec(?): ${ammoProps.ammoRec}
+Shift Chance(?): ${ammoProps.ammoShiftChance}${
+							ammoProps.ExplosionStrength
+								? `
+Explosion Strength: ${ammoProps.ExplosionStrength}
+Max Explosion Distance: ${ammoProps.MaxExplosionDistance}
+Explosion Type: ${ammoProps.ExplosionType}
+HasGrenaderComponent: ${ammoProps.HasGrenaderComponent}`
+								: ""
+						}
+Bullet Mass Gram: ${ammoProps.BulletMassGram}
+Bullet Diameter Milimeters: ${ammoProps.BulletDiameterMilimeters}
+Weight: ${ammoProps.Weight}
+
+`
 					}
 				}
 
@@ -902,7 +986,7 @@ class ItemInfo implements IPostDBLoadMod {
 						const thresh = item._props.CompressorThreshold
 						// prettier-ignore
 						// headsetDescription = `${i18n.AmbientVolume}: ${item._props.AmbientCompressorSendLevel+10}dB | ${i18n.Compressor}: ${i18n.Gain} +${gain}dB × ${i18n.Treshold} ${thresh}dB ≈ ×${Math.abs((gain * (thresh+20)) / 10)} ${i18n.Boost} | ${i18n.ResonanceFilter}: ${item._props.HighpassResonance}@${item._props.HighpassFreq}Hz | ${i18n.Distortion}: ${Math.round(item._props.Distortion * 100)}%` + newLine + newLine;
-						headsetDescription = `${i18n.AmbientVolume}: ${Math.round((item._props.AmbientCompressorSendLevel+10 + item._props.EnvCommonCompressorSendLevel+7 + item._props.EnvNatureCompressorSendLevel+5 + item._props.EnvTechnicalCompressorSendLevel+7) * 10)/10}dB | ${i18n.Boost}: +${((gain + Math.abs(thresh+20)))}dB  | ${i18n.Distortion}: ${Math.round(item._props.Distortion * 100)}%${newLine + newLine}`;
+						headsetDescription = `${i18n.AmbientVolume}: ${Math.round((item._props.AmbientCompressorSendLevel+10 + item._props.EnvCommonCompressorSendLevel+7 + item._props.EnvNatureCompressorSendLevel+5 + item._props.EnvTechnicalCompressorSendLevel+7) * 10)/10}dB | ${i18n.Boost}: +${((gain + Math.abs(thresh+20)))}dB${item._props.Distortion ? ` | ${i18n.Distortion}: ${Math.round(item._props.Distortion * 100)}%` : ""}${newLine + newLine}`;
 
 						// 						const headsetststs =
 						// 							`AmbientCompressorSendLevel: ${item._props.AmbientCompressorSendLevel}dB
@@ -1001,7 +1085,8 @@ class ItemInfo implements IPostDBLoadMod {
 					barterString +
 					productionString +
 					usedForCraftingString +
-					usedForBarterString
+					usedForBarterString +
+					advancedAmmoInfoString
 
 				this.addToDescription(itemID, descriptionString, "prepend")
 
