@@ -29,10 +29,11 @@
  * @version v1.0.0
  */
 
-import os from "node:os";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import fs from "fs-extra";
+import os from "os";
+import path from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 import ignore from "ignore";
 import archiver from "archiver";
 import winston from "winston";
@@ -61,7 +62,7 @@ const logger = winston.createLogger({
 	},
 	format: winston.format.combine(
 		winston.format.colorize(),
-		winston.format.printf((info) => {
+		winston.format.printf(info => {
 			return `${info.level}: ${info.message}`;
 		})
 	),
@@ -84,83 +85,66 @@ const logger = winston.createLogger({
 async function main() {
 	// Get the current directory where the script is being executed
 	const currentDir = getCurrentDirectory();
-
+	
 	// Defining at this scope because we need to use it in the finally block.
 	let projectDir;
-
+	
 	try {
 		// Load the .buildignore file to set up an ignore handler for the build process.
 		const buildIgnorePatterns = await loadBuildIgnoreFile(currentDir);
-
+		
 		// Load the package.json file to get project details.
 		const packageJson = await loadPackageJson(currentDir);
-
+		
 		// Create a descriptive name for the mod package.
 		const projectName = createProjectName(packageJson);
+		const projectZip = createProjectName(packageJson, true);
 		logger.log("success", `Project name created: ${projectName}`);
-
+		
 		// Remove the old distribution directory and create a fresh one.
 		const distDir = await removeOldDistDirectory(currentDir);
 		logger.log("info", "Distribution directory successfully cleaned.");
-
+		
 		// Create a temporary working directory to perform the build operations.
 		projectDir = await createTemporaryDirectoryWithProjectName(projectName);
 		logger.log("success", "Temporary working directory successfully created.");
 		logger.log("info", projectDir);
-
+		
 		// Copy files to the temporary directory while respecting the .buildignore rules.
 		logger.log("info", "Beginning copy operation using .buildignore file...");
 		await copyFiles(currentDir, projectDir, buildIgnorePatterns);
 		logger.log("success", "Files successfully copied to temporary directory.");
-
+		
 		// Create a zip archive of the project files.
 		logger.log("info", "Beginning folder compression...");
-		const zipFilePath = path.join(
-			path.dirname(projectDir),
-			`${projectName}.zip`
-		);
-		await createZipFile(projectDir, zipFilePath, "user/mods/" + projectName);
+		const zipFilePath = path.join(path.dirname(projectDir), `${projectZip}.zip`);
+		await createZipFile(projectDir, zipFilePath, `user/mods/${projectName}`);
 		logger.log("success", "Archive successfully created.");
 		logger.log("info", zipFilePath);
-
+		
 		// Move the zip file inside of the project directory, within the temporary working directory.
-		const zipFileInProjectDir = path.join(projectDir, `${projectName}.zip`);
+		const zipFileInProjectDir = path.join(projectDir, `${projectZip}.zip`);
 		await fs.move(zipFilePath, zipFileInProjectDir);
 		logger.log("success", "Archive successfully moved.");
 		logger.log("info", zipFileInProjectDir);
-
+		
 		// Move the temporary directory into the distribution directory.
 		await fs.move(projectDir, distDir);
-		logger.log(
-			"success",
-			"Temporary directory successfully moved into project distribution directory."
-		);
-
+		logger.log("success", "Temporary directory successfully moved into project distribution directory.");
+		
 		// Log the success message. Write out the path to the mod package.
 		logger.log("success", "------------------------------------");
 		logger.log("success", "Build script completed successfully!");
-		logger.log(
-			"success",
-			"Your mod package has been created in the 'dist' directory:"
-		);
-		logger.log(
-			"success",
-			`/${path.relative(
-				process.cwd(),
-				path.join(distDir, `${projectName}.zip`)
-			)}`
-		);
+		logger.log("success", "Your mod package has been created in the 'dist' directory:");
+		logger.log("success", `  ${path.relative(process.cwd(), path.join(distDir, `${projectZip}.zip`))}`);
 		logger.log("success", "------------------------------------");
 		if (!verbose) {
-			logger.log(
-				"success",
-				"To see a detailed build log, use `npm run buildinfo`."
-			);
+			logger.log("success", "To see a detailed build log, use `npm run buildinfo`.");
 			logger.log("success", "------------------------------------");
 		}
 	} catch (err) {
 		// If any of the file operations fail, log the error.
-		logger.log("error", "An error occurred: " + err);
+		logger.log("error", `An error occurred: ${err}`);
 	} finally {
 		// Clean up the temporary directory, even if the build fails.
 		if (projectDir) {
@@ -168,7 +152,7 @@ async function main() {
 				await fs.promises.rm(projectDir, { force: true, recursive: true });
 				logger.log("info", "Cleaned temporary directory.");
 			} catch (err) {
-				logger.log("error", "Failed to clean temporary directory: " + err);
+				logger.log("error", `Failed to clean temporary directory: ${err}`);
 			}
 		}
 	}
@@ -182,7 +166,7 @@ async function main() {
  * @returns {string} The absolute path of the current working directory.
  */
 function getCurrentDirectory() {
-	return path.dirname(fileURLToPath(import.meta.url));
+	return dirname(fileURLToPath(import.meta.url));
 }
 
 /**
@@ -196,19 +180,16 @@ function getCurrentDirectory() {
  */
 async function loadBuildIgnoreFile(currentDir) {
 	const buildIgnorePath = path.join(currentDir, ".buildignore");
-
+	
 	try {
 		// Attempt to read the contents of the .buildignore file asynchronously.
 		const fileContent = await fs.promises.readFile(buildIgnorePath, "utf-8");
-
+		
 		// Return a new ignore instance and add the rules from the .buildignore file (split by newlines).
 		return ignore().add(fileContent.split("\n"));
 	} catch (err) {
-		logger.log(
-			"warn",
-			"Failed to read .buildignore file. No files or directories will be ignored."
-		);
-
+		logger.log("warn", "Failed to read .buildignore file. No files or directories will be ignored.");
+		
 		// Return an empty ignore instance, ensuring the build process can continue.
 		return ignore();
 	}
@@ -225,32 +206,36 @@ async function loadBuildIgnoreFile(currentDir) {
  */
 async function loadPackageJson(currentDir) {
 	const packageJsonPath = path.join(currentDir, "package.json");
-
+	
 	// Read the contents of the package.json file asynchronously as a UTF-8 string.
-	const packageJsonContent = await fs.promises.readFile(
-		packageJsonPath,
-		"utf-8"
-	);
-
+	const packageJsonContent = await fs.promises.readFile(packageJsonPath, "utf-8");
+	
 	return JSON.parse(packageJsonContent);
 }
 
 /**
  * Constructs a descriptive name for the mod package using details from the `package.json` file. The name is created by
- * concatenating the project name, version, and a timestamp, resulting in a unique and descriptive file name for each
- * build. This name is used as the base name for the temporary working directory and the final ZIP archive, helping to
+ * concatenating the author, project name, and optionally version.
+ * This name is used as the base name for the temporary working directory and the final ZIP archive, helping to
  * identify different versions of the mod package easily.
  *
  * @param {Object} packageJson - A JSON object containing the contents of the `package.json` file.
+ * @param {boolean} includeVersion - Whether to include the version in the resulting name
  * @returns {string} A string representing the constructed project name.
  */
-function createProjectName(packageJson) {
-	// Remove any non-alphanumeric characters from the author and name.
-	const author = packageJson.author.replace(/\W/g, "");
-	const name = packageJson.name.replace(/\W/g, "");
-
+function createProjectName(packageJson, includeVersion = false) {
+	// Only allow a-z, 0-9, underscore and dash
+	const author = packageJson.author.replace(/[^A-Za-z0-9_-]/g, "");
+	const name = packageJson.name.replace(/[^A-Za-z0-9_-]/g, "");
+	const version = packageJson.version;
+	
 	// Ensure the name is lowercase, as per the package.json specification.
-	return `${author}-${name}`.toLowerCase();
+	if (includeVersion)
+		{
+		return `${author}-${name}-${version}`;
+	}
+	
+	return `${author}-${name}`;
 }
 
 /**
@@ -279,14 +264,12 @@ async function removeOldDistDirectory(projectDir) {
  */
 async function createTemporaryDirectoryWithProjectName(projectName) {
 	// Create a new directory in the system's temporary folder to hold the project files.
-	const tempDir = await fs.promises.mkdtemp(
-		path.join(os.tmpdir(), "spt-mod-build-")
-	);
-
+	const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "spt-mod-build-"));
+	
 	// Create a subdirectory within the temporary directory using the project name for this specific build.
 	const projectDir = path.join(tempDir, projectName);
 	await fs.ensureDir(projectDir);
-
+	
 	return projectDir;
 }
 
@@ -309,27 +292,24 @@ async function copyFiles(srcDir, destDir, ignoreHandler) {
 	try {
 		// Read the contents of the source directory to get a list of entries (files and directories).
 		const entries = await fs.promises.readdir(srcDir, { withFileTypes: true });
-
+		
 		// Initialize an array to hold the promises returned by recursive calls to copyFiles and copyFile operations.
 		const copyOperations = [];
-
+		
 		for (const entry of entries) {
 			// Define the source and destination paths for each entry.
 			const srcPath = path.join(srcDir, entry.name);
 			const destPath = path.join(destDir, entry.name);
-
+			
 			// Get the relative path of the source file to check against the ignore handler.
 			const relativePath = path.relative(process.cwd(), srcPath);
-
+			
 			// If the ignore handler dictates that this file should be ignored, skip to the next iteration.
 			if (ignoreHandler.ignores(relativePath)) {
-				logger.log(
-					"info",
-					`Ignored: /${path.relative(process.cwd(), srcPath)}`
-				);
+				logger.log("info", `Ignored: /${path.relative(process.cwd(), srcPath)}`);
 				continue;
 			}
-
+			
 			if (entry.isDirectory()) {
 				// If the entry is a directory, create the corresponding temporary directory and make a recursive call
 				// to copyFiles to handle copying the contents of the directory.
@@ -340,20 +320,17 @@ async function copyFiles(srcDir, destDir, ignoreHandler) {
 				// the operation is successful.
 				copyOperations.push(
 					fs.copy(srcPath, destPath).then(() => {
-						logger.log(
-							"info",
-							`Copied: /${path.relative(process.cwd(), srcPath)}`
-						);
+						logger.log("info", `Copied: /${path.relative(process.cwd(), srcPath)}`);
 					})
 				);
 			}
 		}
-
+		
 		// Await all copy operations to ensure all files and directories are copied before exiting the function.
 		await Promise.all(copyOperations);
 	} catch (err) {
 		// Log an error message if any error occurs during the copy process.
-		logger.log("error", "Error copying files: " + err);
+		logger.log("error", `Error copying files: ${err}`);
 	}
 }
 
@@ -370,45 +347,39 @@ async function createZipFile(directoryToZip, zipFilePath, containerDirName) {
 	return new Promise((resolve, reject) => {
 		// Create a write stream to the specified ZIP file path.
 		const output = fs.createWriteStream(zipFilePath);
-
+		
 		// Create a new archiver instance with ZIP format and maximum compression level.
 		const archive = archiver("zip", {
 			zlib: { level: 9 },
 		});
-
+		
 		// Set up an event listener for the 'close' event to resolve the promise when the archiver has finalized.
-		output.on("close", function () {
-			logger.log(
-				"info",
-				"Archiver has finalized. The output and the file descriptor have closed."
-			);
+		output.on("close", () => {
+			logger.log("info", "Archiver has finalized. The output and the file descriptor have closed.");
 			resolve();
 		});
-
+		
 		// Set up an event listener for the 'warning' event to handle warnings appropriately, logging them or rejecting
 		// the promise based on the error code.
-		archive.on("warning", function (err) {
+		archive.on("warning", (err) => {
 			if (err.code === "ENOENT") {
-				logger.log(
-					"warn",
-					`Archiver issued a warning: ${err.code} - ${err.message}`
-				);
+				logger.log("warn", `Archiver issued a warning: ${err.code} - ${err.message}`);
 			} else {
 				reject(err);
 			}
 		});
-
+		
 		// Set up an event listener for the 'error' event to reject the promise if any error occurs during archiving.
-		archive.on("error", function (err) {
+		archive.on("error", (err) => {
 			reject(err);
 		});
-
+		
 		// Pipe archive data to the file.
 		archive.pipe(output);
-
+		
 		// Add the directory to the archive, under the provided directory name.
 		archive.directory(directoryToZip, containerDirName);
-
+		
 		// Finalize the archive, indicating that no more files will be added and triggering the 'close' event once all
 		// data has been written.
 		archive.finalize();
